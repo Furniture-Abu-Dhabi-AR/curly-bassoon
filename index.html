@@ -250,13 +250,25 @@
     <script>
         console.log('✅ Приложение загружено');
 
-        // Переменные для AR
+        // Переменные для AR (БЕЗ THREE!)
         let scene, camera, renderer, model, raycaster, mouse;
         let isARActive = false;
         let modelRotation = 0;
         let modelScale = 1;
-        let modelPosition = new THREE.Vector3(0, -0.5, -3);
+        let modelPosition = null; // Инициализируем после загрузки THREE
         let touchStartX = 0;
+
+        // Функция для ожидания загрузки THREE
+        function waitForThree(callback) {
+            if (typeof THREE === 'undefined') {
+                console.log('⏳ Ожидание THREE.js...');
+                setTimeout(() => waitForThree(callback), 100);
+            } else {
+                console.log('✅ THREE.js загружен');
+                modelPosition = new THREE.Vector3(0, -0.5, -3);
+                callback();
+            }
+        }
 
         // Инициализация меню
         function initMenu() {
@@ -399,6 +411,7 @@
                     btn.addEventListener('click', function(e) {
                         e.preventDefault();
                         e.stopPropagation();
+                        console.log(`🔘 Клик на ${id}`);
                         buttons[id]();
                     });
                     console.log(`✅ ${id} подключена`);
@@ -487,9 +500,9 @@
         function resetModel() {
             modelRotation = 0;
             modelScale = 1;
-            modelPosition = new THREE.Vector3(0, -0.5, -3);
             if (model) {
                 model.position.copy(modelPosition);
+                model.rotation.set(0, 0, 0);
             }
             updateModel();
         }
@@ -528,12 +541,14 @@
             renderer.setSize(width, height);
         }
 
-        // Инициализация
-        if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', initMenu);
-        } else {
-            initMenu();
-        }
+        // Инициализация - ждем загрузку THREE
+        waitForThree(() => {
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initMenu);
+            } else {
+                initMenu();
+            }
+        });
     </script>
 </body>
 </html>
