@@ -236,7 +236,7 @@
     </div>
 
     <div style="text-align:right">
-      <div style="font-size:12px;color:var(--muted)">Files: <span style="color:var(--text)">qwe.glb</span> · <span style="color:var(--text)">qwe.usdz</span></div>
+      <div style="font-size:12px;color:var(--muted)">Files: <span style="color:var(--text)">qwe.glb</span> · <span style="color:var(--text)">model.glb.usdz</span></div>
     </div>
   </div>
 
@@ -270,7 +270,7 @@
 
       <div class="controls" role="group" aria-label="AR controls">
         <!-- Hidden anchor for stable Quick Look trigger on iOS -->
-        <a id="iosAnchor" rel="ar" href="qwe.usdz" style="display:none"></a>
+        <a id="iosAnchor" rel="ar" href="model.glb.usdz" style="display:none"></a>
 
         <!-- iOS button: triggers the anchor click (most stable Quick Look trigger) -->
         <button id="btnIOS" class="btn ios" title="Open in Quick Look (iPhone)" aria-label="Open in Quick Look (iPhone)">
@@ -300,7 +300,7 @@
 
     // Absolute URLs for Scene Viewer intent and Quick Look anchor
     const glbUrl = new URL('qwe.glb', window.location.href).href;
-    const usdzUrl = new URL('qwe.usdz', window.location.href).href;
+    const usdzUrl = new URL('model.glb.usdz', window.location.href).href;
     iosAnchor.href = usdzUrl;
 
     // Hide loader when preview loaded
