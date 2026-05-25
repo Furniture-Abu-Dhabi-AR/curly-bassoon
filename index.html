@@ -21,6 +21,9 @@
             width: 100vw;
             height: 100vh;
             display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
         }
         
         .menu {
@@ -34,6 +37,10 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
+        }
+        
+        .menu.hidden {
+            display: none !important;
         }
         
         .menu-content {
@@ -63,7 +70,7 @@
             gap: 15px;
         }
         
-        button, a {
+        button {
             padding: 15px 30px;
             font-size: 1.1em;
             border: none;
@@ -71,8 +78,6 @@
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s ease;
-            text-decoration: none;
-            display: block;
         }
         
         #startARBtn {
@@ -80,18 +85,13 @@
             color: white;
         }
         
-        #startARBtn:active, #startARBtn:hover {
-            transform: scale(0.98);
+        #startARBtn:hover {
+            transform: translateY(-2px);
             box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
         }
         
-        #iosARBtn {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-            color: white;
-        }
-        
-        .hidden {
-            display: none !important;
+        #startARBtn:active {
+            transform: scale(0.98);
         }
         
         .info {
@@ -101,6 +101,12 @@
             border-radius: 10px;
             font-size: 0.9em;
             color: #555;
+            text-align: left;
+        }
+        
+        .info ul {
+            margin-left: 20px;
+            margin-top: 10px;
         }
         
         .controls {
@@ -108,15 +114,20 @@
             bottom: 20px;
             left: 20px;
             right: 20px;
-            display: flex;
+            display: none;
             gap: 10px;
             z-index: 50;
             flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .controls.visible {
+            display: flex !important;
         }
         
         .control-btn {
-            background: rgba(255, 255, 255, 0.9);
-            border: none;
+            background: rgba(255, 255, 255, 0.95);
+            border: 2px solid #667eea;
             padding: 12px 20px;
             border-radius: 8px;
             font-size: 0.9em;
@@ -124,6 +135,11 @@
             font-weight: bold;
             transition: all 0.3s;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+        
+        .control-btn:hover {
+            background: #667eea;
+            color: white;
         }
         
         .control-btn:active {
@@ -134,28 +150,37 @@
             position: fixed;
             top: 20px;
             left: 20px;
-            background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.85);
             color: white;
             padding: 15px 20px;
             border-radius: 8px;
-            font-size: 0.9em;
+            font-size: 0.95em;
             max-width: 300px;
             z-index: 40;
+            display: none;
+        }
+        
+        .info-overlay.visible {
+            display: block !important;
         }
         
         .loading {
-            display: flex;
+            display: none;
             justify-content: center;
             align-items: center;
             height: 100vh;
             width: 100vw;
-            background: rgba(0, 0, 0, 0.8);
+            background: rgba(0, 0, 0, 0.9);
             color: white;
             font-size: 1.2em;
             z-index: 200;
             position: fixed;
             top: 0;
             left: 0;
+        }
+        
+        .loading.visible {
+            display: flex !important;
         }
         
         .spinner {
@@ -183,12 +208,11 @@
             
             <div class="button-group">
                 <button id="startARBtn">📱 Запустить AR без маркеров</button>
-                <a id="iosARBtn" href="#" rel="ar" class="hidden">🍎 Просмотр в AR (iPhone)</a>
             </div>
             
             <div class="info">
                 <p><strong>💡 Как использовать:</strong></p>
-                <ul style="text-align: left; margin-top: 10px;">
+                <ul>
                     <li>✅ Направьте камеру на пол или стену</li>
                     <li>✅ Нажмите на поверхность, чтобы поместить мебель</li>
                     <li>✅ Используйте кнопки для управления размером</li>
@@ -200,11 +224,11 @@
 
     <!-- AR сцена -->
     <div id="arContainer">
-        <div id="info-overlay" class="info-overlay hidden">
+        <div id="info-overlay" class="info-overlay">
             <p id="arStatus">🔄 Инициализация AR...</p>
         </div>
         
-        <div class="controls hidden" id="controls">
+        <div class="controls" id="controls">
             <button class="control-btn" id="rotateLeftBtn">↙️ Влево</button>
             <button class="control-btn" id="rotateRightBtn">↘️ Вправо</button>
             <button class="control-btn" id="scaleUpBtn">🔍+ Больше</button>
@@ -214,7 +238,7 @@
         </div>
     </div>
 
-    <div id="loading" class="loading hidden">
+    <div id="loading" class="loading">
         <div class="spinner"></div>
         <span>Загрузка AR...</span>
     </div>
@@ -224,185 +248,216 @@
     <script src="https://cdn.jsdelivr.net/npm/three@r128/examples/js/loaders/GLTFLoader.js"></script>
 
     <script>
+        console.log('✅ Приложение загружено');
+
         // Переменные для AR
         let scene, camera, renderer, model, raycaster, mouse;
-        let arSupported = false;
         let isARActive = false;
         let modelRotation = 0;
         let modelScale = 1;
-        let modelPosition = new THREE.Vector3(0, 0, -2);
+        let modelPosition = new THREE.Vector3(0, -0.5, -3);
         let touchStartX = 0;
 
-        // Определяем тип устройства
-        function isIOS() {
-            return /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        }
-
+        // Инициализация меню
         function initMenu() {
+            console.log('🔧 Инициализация меню');
             const startARBtn = document.getElementById('startARBtn');
-            const iosARBtn = document.getElementById('iosARBtn');
-
-            if (isIOS() && 'XRSession' in window) {
-                startARBtn.addEventListener('click', startWebAR);
-            } else if (isIOS()) {
-                startARBtn.textContent = '🍎 Просмотр в AR Quick Look';
-                startARBtn.addEventListener('click', () => {
-                    window.location.href = 'models/model.usdz';
+            
+            if (startARBtn) {
+                startARBtn.addEventListener('click', function(e) {
+                    console.log('🔘 Клик на кнопку AR');
+                    e.preventDefault();
+                    startWebAR();
                 });
-            } else {
-                startARBtn.addEventListener('click', startWebAR);
+                console.log('✅ Кнопка AR подключена');
             }
         }
 
         function startWebAR() {
-            document.getElementById('loading').classList.remove('hidden');
+            console.log('🚀 Запуск WebAR');
+            document.getElementById('loading').classList.add('visible');
             document.getElementById('menu').classList.add('hidden');
             
-            if (navigator.xr) {
-                navigator.xr.isSessionSupported('immersive-ar').then((supported) => {
-                    if (supported) {
-                        startARSession();
-                    } else {
-                        startFallbackAR();
-                    }
-                });
-            } else {
-                startFallbackAR();
-            }
-        }
-
-        function startARSession() {
-            // Используем WebXR для настоящего AR
-            navigator.xr.requestSession('immersive-ar', {
-                requiredFeatures: ['hit-test'],
-                optionalFeatures: ['dom-overlay'],
-                domOverlay: { root: document.body }
-            }).then((session) => {
+            setTimeout(() => {
                 initThreeJS();
-                isARActive = true;
-                document.getElementById('arContainer').style.display = 'block';
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('controls').classList.remove('hidden');
-            }).catch(() => {
-                startFallbackAR();
-            });
-        }
-
-        function startFallbackAR() {
-            // Fallback для устройств без WebXR (камера + плоскость)
-            initThreeJS();
-            isARActive = true;
-            document.getElementById('arContainer').style.display = 'block';
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('controls').classList.remove('hidden');
-            updateARStatus('💡 Направьте камеру на пол');
+            }, 500);
         }
 
         function initThreeJS() {
-            // Сцена
-            scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x000000);
+            console.log('🎬 Инициализация Three.js');
+            
+            try {
+                // Сцена
+                scene = new THREE.Scene();
+                scene.background = new THREE.Color(0x1a1a1a);
 
-            // Камера
-            const width = window.innerWidth;
-            const height = window.innerHeight;
-            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
-            camera.position.z = 5;
+                // Камера
+                const width = window.innerWidth;
+                const height = window.innerHeight;
+                camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+                camera.position.z = 0;
 
-            // Рендерер
-            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-            renderer.setSize(width, height);
-            renderer.setPixelRatio(window.devicePixelRatio);
-            renderer.xr.enabled = true;
-            document.getElementById('arContainer').appendChild(renderer.domElement);
+                // Рендерер
+                renderer = new THREE.WebGLRenderer({ 
+                    antialias: true, 
+                    alpha: true,
+                    precision: 'highp'
+                });
+                renderer.setSize(width, height);
+                renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+                renderer.shadowMap.enabled = true;
+                
+                const arContainer = document.getElementById('arContainer');
+                arContainer.appendChild(renderer.domElement);
+                console.log('✅ Рендерер создан');
 
-            // Освещение
-            const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-            scene.add(light);
+                // Освещение
+                const ambientLight = new THREE.AmbientLight(0xffffff, 1.2);
+                scene.add(ambientLight);
 
-            // Загрузка модели
-            loadModel();
+                const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+                directionalLight.position.set(5, 10, 5);
+                directionalLight.castShadow = true;
+                scene.add(directionalLight);
 
-            // Raycaster для клика
-            raycaster = new THREE.Raycaster();
-            mouse = new THREE.Vector2();
+                // Raycaster
+                raycaster = new THREE.Raycaster();
+                mouse = new THREE.Vector2();
 
-            // Обработчики событий
-            window.addEventListener('click', onModelClick);
-            window.addEventListener('touchstart', onTouchStart);
-            window.addEventListener('touchmove', onTouchMove);
+                // Обработчики событий
+                renderer.domElement.addEventListener('click', onModelClick);
+                renderer.domElement.addEventListener('touchstart', onTouchStart);
+                renderer.domElement.addEventListener('touchmove', onTouchMove);
 
-            // Кнопки управления
-            document.getElementById('rotateLeftBtn').addEventListener('click', () => {
-                modelRotation -= 0.2;
-                updateModel();
-            });
-            document.getElementById('rotateRightBtn').addEventListener('click', () => {
-                modelRotation += 0.2;
-                updateModel();
-            });
-            document.getElementById('scaleUpBtn').addEventListener('click', () => {
-                modelScale *= 1.1;
-                updateModel();
-            });
-            document.getElementById('scaleDownBtn').addEventListener('click', () => {
-                modelScale *= 0.9;
-                updateModel();
-            });
-            document.getElementById('resetBtn').addEventListener('click', resetModel);
-            document.getElementById('exitARBtn').addEventListener('click', exitAR);
+                // Подключаем кнопки
+                setupControlButtons();
 
-            // Анимационный цикл
-            renderer.setAnimationLoop((time, frame) => {
-                renderer.render(scene, camera);
-            });
+                // Показываем AR контейнер
+                document.getElementById('arContainer').style.display = 'block';
+                document.getElementById('loading').classList.remove('visible');
+                document.getElementById('info-overlay').classList.add('visible');
+                document.getElementById('controls').classList.add('visible');
 
-            window.addEventListener('resize', onWindowResize);
+                // Загружаем модель
+                loadModel();
+
+                // Анимационный цикл
+                function animate() {
+                    requestAnimationFrame(animate);
+                    if (renderer && scene && camera) {
+                        renderer.render(scene, camera);
+                    }
+                }
+                animate();
+
+                window.addEventListener('resize', onWindowResize);
+                console.log('✅ Three.js готов');
+                isARActive = true;
+
+            } catch (error) {
+                console.error('❌ Ошибка:', error);
+                updateARStatus('❌ Ошибка инициализации');
+            }
+        }
+
+        function setupControlButtons() {
+            console.log('🔘 Подключение кнопок управления');
+            
+            const buttons = {
+                'rotateLeftBtn': () => {
+                    modelRotation -= 0.3;
+                    updateModel();
+                    updateARStatus('↙️ Вращение влево');
+                },
+                'rotateRightBtn': () => {
+                    modelRotation += 0.3;
+                    updateModel();
+                    updateARStatus('↘️ Вращение вправо');
+                },
+                'scaleUpBtn': () => {
+                    modelScale *= 1.15;
+                    updateModel();
+                    updateARStatus(`🔍 Размер: ${(modelScale * 100).toFixed(0)}%`);
+                },
+                'scaleDownBtn': () => {
+                    modelScale *= 0.85;
+                    updateModel();
+                    updateARStatus(`🔍 Размер: ${(modelScale * 100).toFixed(0)}%`);
+                },
+                'resetBtn': () => {
+                    resetModel();
+                    updateARStatus('🔄 Модель сброшена');
+                },
+                'exitARBtn': () => {
+                    exitAR();
+                }
+            };
+
+            for (let id in buttons) {
+                const btn = document.getElementById(id);
+                if (btn) {
+                    btn.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        buttons[id]();
+                    });
+                    console.log(`✅ ${id} подключена`);
+                }
+            }
         }
 
         function loadModel() {
+            console.log('📥 Загрузка модели GLB');
             const loader = new THREE.GLTFLoader();
             
             loader.load('models/model.glb', (gltf) => {
                 model = gltf.scene;
                 model.scale.set(modelScale, modelScale, modelScale);
                 model.position.copy(modelPosition);
+                
+                // Центрируем модель
+                const box = new THREE.Box3().setFromObject(model);
+                const center = box.getCenter(new THREE.Vector3());
+                model.position.sub(center);
+                model.position.copy(modelPosition);
+                
                 scene.add(model);
 
-                // Играем анимацию если она есть
-                if (gltf.animations.length > 0) {
+                if (gltf.animations && gltf.animations.length > 0) {
                     const mixer = new THREE.AnimationMixer(model);
                     const action = mixer.clipAction(gltf.animations[0]);
                     action.play();
                 }
 
-                document.getElementById('loading').classList.add('hidden');
-                updateARStatus('✅ Нажмите на поверхность, чтобы поместить мебель');
+                document.getElementById('loading').classList.remove('visible');
+                updateARStatus('✅ Модель загружена! Нажмите на экран');
+                console.log('✅ Модель загружена');
             }, (progress) => {
                 const percent = Math.round((progress.loaded / progress.total) * 100);
                 updateARStatus(`⏳ Загрузка: ${percent}%`);
             }, (error) => {
-                console.error('Ошибка загрузки модели:', error);
+                console.error('❌ Ошибка загрузки:', error);
                 updateARStatus('❌ Ошибка загрузки модели');
             });
         }
 
         function onModelClick(event) {
-            if (!model) return;
+            if (!model || !isARActive) return;
             
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
 
             raycaster.setFromCamera(mouse, camera);
             
-            // Получаем точку клика на воображаемой плоскости
-            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+            const plane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1);
             const target = new THREE.Vector3();
             raycaster.ray.intersectPlane(plane, target);
             
             if (target) {
+                target.y = modelPosition.y;
                 model.position.copy(target);
                 updateARStatus('✅ Мебель размещена!');
+                console.log('📍 Модель размещена в:', target);
             }
         }
 
@@ -416,7 +471,7 @@
             if (event.touches.length === 1 && model) {
                 const touchX = event.touches[0].clientX;
                 const diff = touchX - touchStartX;
-                modelRotation += diff * 0.005;
+                modelRotation += diff * 0.01;
                 touchStartX = touchX;
                 updateModel();
             }
@@ -432,12 +487,11 @@
         function resetModel() {
             modelRotation = 0;
             modelScale = 1;
-            modelPosition = new THREE.Vector3(0, 0, -2);
+            modelPosition = new THREE.Vector3(0, -0.5, -3);
             if (model) {
                 model.position.copy(modelPosition);
             }
             updateModel();
-            updateARStatus('🔄 Модель сброшена');
         }
 
         function updateARStatus(text) {
@@ -448,17 +502,21 @@
         }
 
         function exitAR() {
+            console.log('🚪 Выход из AR');
+            isARActive = false;
             document.getElementById('menu').classList.remove('hidden');
             document.getElementById('arContainer').style.display = 'none';
-            document.getElementById('controls').classList.add('hidden');
-            if (renderer && renderer.domElement) {
-                renderer.domElement.remove();
+            document.getElementById('controls').classList.remove('visible');
+            document.getElementById('info-overlay').classList.remove('visible');
+            
+            if (renderer && renderer.domElement && renderer.domElement.parentNode) {
+                renderer.domElement.parentNode.removeChild(renderer.domElement);
             }
+            
             scene = null;
             camera = null;
             renderer = null;
             model = null;
-            isARActive = false;
         }
 
         function onWindowResize() {
@@ -470,8 +528,12 @@
             renderer.setSize(width, height);
         }
 
-        // Инициализация при загрузке
-        window.addEventListener('DOMContentLoaded', initMenu);
+        // Инициализация
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initMenu);
+        } else {
+            initMenu();
+        }
     </script>
 </body>
 </html>
