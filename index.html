@@ -1,352 +1,448 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Closet AR — Android + iPhone</title>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Premium AR Viewer</title>
+
+<!-- model-viewer -->
+<script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
+
 <style>
-  :root{--ui-bg:rgba(255,255,255,0.95);--accent:#5b6cff;--muted:#666}
-  html,body{height:100%;margin:0;font-family:system-ui,Roboto,Arial;background:linear-gradient(135deg,#2b6df6 0%,#8b5cf6 100%)}
-  #container{width:100%;height:100%;position:relative;overflow:hidden}
-  canvas{display:block;width:100%;height:100%}
-  .ui-card{position:fixed;left:50%;top:12%;transform:translateX(-50%);background:var(--ui-bg);padding:18px;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,.25);max-width:92%;width:420px;text-align:center}
-  .ui-title{font-weight:700;margin:0 0 6px 0}
-  .ui-sub{color:var(--muted);font-size:14px;margin:0 0 12px 0}
-  .controls{display:flex;gap:8px;justify-content:center;align-items:center;margin-top:10px}
-  .btn{background:var(--accent);color:#fff;border:0;padding:10px 14px;border-radius:10px;font-weight:600;cursor:pointer}
-  .btn.secondary{background:#fff;color:var(--accent);border:1px solid rgba(0,0,0,.06)}
-  .slider{width:180px}
-  .bottom-bar{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);display:flex;gap:10px;z-index:999}
-  .hint{position:fixed;left:12px;bottom:18px;color:#fff;background:rgba(0,0,0,.25);padding:8px 12px;border-radius:10px;font-size:13px}
-  .loader{display:inline-block;width:18px;height:18px;border-radius:50%;border:3px solid rgba(0,0,0,.08);border-top-color:var(--accent);animation:spin .9s linear infinite;vertical-align:middle;margin-left:8px}
-  @keyframes spin{to{transform:rotate(360deg)}}
-  .hidden{display:none}
+    *{
+        margin:0;
+        padding:0;
+        box-sizing:border-box;
+    }
+
+    :root{
+        --glass-bg:rgba(255,255,255,0.04);
+        --glass-border:rgba(255,255,255,0.12);
+        --neon:#00e5ff;
+        --text-main:#ffffff;
+        --text-sub:rgba(255,255,255,0.7);
+    }
+
+    body{
+        width:100%;
+        height:100vh;
+        overflow:hidden;
+        background:
+            radial-gradient(circle at 10% 0%, #101018 0%, #050509 40%, #000000 100%);
+        font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text",system-ui,Arial,sans-serif;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        color:var(--text-main);
+    }
+
+    .bg-glow{
+        position:fixed;
+        inset:0;
+        pointer-events:none;
+        z-index:-1;
+    }
+
+    .bg-glow::before,
+    .bg-glow::after{
+        content:"";
+        position:absolute;
+        width:420px;
+        height:420px;
+        border-radius:50%;
+        filter:blur(80px);
+        opacity:0.45;
+        mix-blend-mode:screen;
+    }
+
+    .bg-glow::before{
+        background:radial-gradient(circle,var(--neon),transparent 60%);
+        top:-120px;
+        left:-80px;
+    }
+
+    .bg-glow::after{
+        background:radial-gradient(circle,#7b5cff,transparent 60%);
+        bottom:-140px;
+        right:-60px;
+    }
+
+    .container{
+        position:relative;
+        width:100%;
+        max-width:520px;
+        height:80vh;
+        max-height:720px;
+        padding:18px;
+        display:flex;
+        flex-direction:column;
+        justify-content:space-between;
+        align-items:center;
+    }
+
+    .glass-card{
+        position:relative;
+        width:100%;
+        height:100%;
+        border-radius:28px;
+        padding:20px 20px 80px;
+        background:linear-gradient(145deg,rgba(255,255,255,0.06),rgba(255,255,255,0.01));
+        border:1px solid var(--glass-border);
+        box-shadow:
+            0 24px 80px rgba(0,0,0,0.8),
+            0 0 40px rgba(0,229,255,0.18);
+        backdrop-filter:blur(26px);
+        -webkit-backdrop-filter:blur(26px);
+        overflow:hidden;
+    }
+
+    .glass-card::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background:linear-gradient(135deg,rgba(255,255,255,0.16),transparent 40%,rgba(0,229,255,0.12) 70%,transparent 100%);
+        opacity:0.12;
+        pointer-events:none;
+    }
+
+    .header{
+        position:relative;
+        z-index:2;
+        text-align:left;
+        margin-bottom:10px;
+    }
+
+    .badge{
+        display:inline-flex;
+        align-items:center;
+        gap:8px;
+        padding:4px 10px;
+        border-radius:999px;
+        background:rgba(0,0,0,0.6);
+        border:1px solid rgba(255,255,255,0.12);
+        font-size:11px;
+        text-transform:uppercase;
+        letter-spacing:0.12em;
+        color:var(--text-sub);
+        margin-bottom:10px;
+    }
+
+    .badge-dot{
+        width:7px;
+        height:7px;
+        border-radius:50%;
+        background:var(--neon);
+        box-shadow:0 0 12px var(--neon);
+    }
+
+    .title{
+        font-size:30px;
+        font-weight:700;
+        letter-spacing:0.12em;
+        text-transform:uppercase;
+        margin-bottom:6px;
+        text-shadow:0 0 24px rgba(0,0,0,0.8);
+    }
+
+    .subtitle{
+        font-size:14px;
+        color:var(--text-sub);
+    }
+
+    .viewer-wrap{
+        position:relative;
+        margin-top:14px;
+        border-radius:22px;
+        overflow:hidden;
+        background:
+            radial-gradient(circle at 20% 0%,rgba(0,229,255,0.18),transparent 55%),
+            radial-gradient(circle at 80% 100%,rgba(123,92,255,0.22),transparent 55%),
+            #050509;
+        box-shadow:
+            0 26px 60px rgba(0,0,0,0.9),
+            0 0 40px rgba(0,229,255,0.25);
+    }
+
+    model-viewer{
+        width:100%;
+        height:360px;
+        --poster-color:transparent;
+    }
+
+    .viewer-overlay-gradient{
+        position:absolute;
+        inset:0;
+        pointer-events:none;
+        background:
+            radial-gradient(circle at 50% 120%,rgba(0,0,0,0.9),transparent 55%),
+            linear-gradient(to top,rgba(0,0,0,0.45),transparent 40%);
+        mix-blend-mode:multiply;
+    }
+
+    .bottom-bar{
+        position:absolute;
+        left:0;
+        right:0;
+        bottom:0;
+        padding:18px 20px 20px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        gap:10px;
+        background:linear-gradient(to top,rgba(0,0,0,0.9),transparent);
+        z-index:3;
+    }
+
+    .meta{
+        display:flex;
+        flex-direction:column;
+        gap:4px;
+    }
+
+    .meta-label{
+        font-size:11px;
+        text-transform:uppercase;
+        letter-spacing:0.16em;
+        color:var(--text-sub);
+    }
+
+    .meta-value{
+        font-size:13px;
+        color:var(--text-main);
+        opacity:0.9;
+    }
+
+    .ar-button{
+        position:relative;
+        padding:14px 26px;
+        border:none;
+        border-radius:999px;
+        background:radial-gradient(circle at 0% 0%,#ffffff, #d9d9d9);
+        color:#000;
+        font-size:14px;
+        font-weight:700;
+        cursor:pointer;
+        letter-spacing:0.14em;
+        text-transform:uppercase;
+        box-shadow:
+            0 14px 40px rgba(0,0,0,0.9),
+            0 0 26px rgba(255,255,255,0.35);
+        transition:transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
+        white-space:nowrap;
+    }
+
+    .ar-button::before{
+        content:"";
+        position:absolute;
+        inset:-1px;
+        border-radius:inherit;
+        border:1px solid rgba(0,0,0,0.12);
+        pointer-events:none;
+    }
+
+    .ar-button:hover{
+        transform:translateY(-2px);
+        box-shadow:
+            0 18px 50px rgba(0,0,0,0.95),
+            0 0 34px rgba(255,255,255,0.5);
+        background:radial-gradient(circle at 0% 0%,#ffffff,#f5f5f5);
+    }
+
+    .ar-button:active{
+        transform:translateY(0);
+        box-shadow:
+            0 10px 26px rgba(0,0,0,0.9),
+            0 0 20px rgba(255,255,255,0.35);
+    }
+
+    .loading{
+        position:absolute;
+        inset:0;
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        background:radial-gradient(circle at 50% 0%,rgba(0,0,0,0.9),rgba(0,0,0,1));
+        z-index:20;
+        transition:opacity 0.5s ease;
+    }
+
+    .loading.hidden{
+        opacity:0;
+        pointer-events:none;
+    }
+
+    .loader-ring{
+        width:70px;
+        height:70px;
+        border-radius:50%;
+        border:4px solid rgba(255,255,255,0.08);
+        border-top:4px solid var(--neon);
+        animation:spin 1s linear infinite;
+        box-shadow:0 0 24px rgba(0,229,255,0.6);
+    }
+
+    .loader-glow{
+        position:absolute;
+        width:140px;
+        height:140px;
+        border-radius:50%;
+        background:radial-gradient(circle,var(--neon),transparent 60%);
+        filter:blur(40px);
+        opacity:0.4;
+    }
+
+    @keyframes spin{
+        to{ transform:rotate(360deg); }
+    }
+
+    @media(max-width:768px){
+        .container{
+            height:100vh;
+            max-height:none;
+            padding:14px;
+        }
+
+        .glass-card{
+            padding:16px 14px 80px;
+            border-radius:24px;
+        }
+
+        .title{
+            font-size:22px;
+        }
+
+        .subtitle{
+            font-size:13px;
+        }
+
+        model-viewer{
+            height:320px;
+        }
+
+        .bottom-bar{
+            padding:14px 14px 18px;
+        }
+
+        .meta-label{
+            font-size:10px;
+        }
+
+        .meta-value{
+            font-size:12px;
+        }
+
+        .ar-button{
+            padding:12px 20px;
+            font-size:12px;
+        }
+    }
+
+    @media(max-width:480px){
+        model-viewer{
+            height:300px;
+        }
+    }
 </style>
 </head>
+
 <body>
-<div id="container"></div>
 
-<div class="ui-card" id="uiCard" aria-hidden="false">
-  <h1 class="ui-title">Closet AR</h1>
-  <p class="ui-sub">Посмотрите мебель в вашем интерьере 🔘 Запустить AR без маркеров</p>
+<div class="bg-glow"></div>
 
-  <div id="statusLine"><span id="statusText">Загрузка сцены…</span><span id="loader" class="loader"></span></div>
+<div class="container">
+    <div class="glass-card" id="card">
 
-  <div class="controls" style="margin-top:12px">
-    <button id="androidBtn" class="btn">AR для Android</button>
-    <a id="iphoneLink" rel="ar" href="model.usdz"><button class="btn secondary">AR для iPhone</button></a>
-  </div>
+        <div class="loading" id="loading">
+            <div class="loader-glow"></div>
+            <div class="loader-ring"></div>
+        </div>
 
-  <div style="margin-top:12px;display:flex;gap:8px;align-items:center;justify-content:center">
-    <button id="decBtn" class="btn secondary">−</button>
-    <input id="scaleSlider" class="slider" type="range" min="0.1" max="3" step="0.01" value="1">
-    <button id="incBtn" class="btn secondary">+</button>
-  </div>
+        <div class="header">
+            <div class="badge">
+                <span class="badge-dot"></span>
+                <span>REAL‑TIME AR OBJECT</span>
+            </div>
+            <div class="title">AR EXPERIENCE</div>
+            <div class="subtitle">Premium 3D visualization for iOS & Android</div>
+        </div>
 
-  <p style="font-size:13px;color:var(--muted);margin-top:10px">Нажмите на пол, чтобы поместить модель. Свайп — вращение. Пинч — масштаб.</p>
+        <div class="viewer-wrap">
+            <model-viewer
+                id="viewer"
+                src="qwe.glb"
+                ios-src="qwe.usdz"
+                alt="3D Model"
+                ar
+                ar-modes="scene-viewer quick-look webxr"
+                camera-controls
+                touch-action="pan-y"
+                shadow-intensity="1.4"
+                exposure="1.05"
+                auto-rotate
+                rotation-per-second="25deg"
+                camera-orbit="0deg 75deg 2.5m"
+                field-of-view="30deg"
+                environment-image="neutral"
+                loading="eager">
+            </model-viewer>
+
+            <div class="viewer-overlay-gradient"></div>
+
+            <div class="bottom-bar">
+                <div class="meta">
+                    <div class="meta-label">AR READY</div>
+                    <div class="meta-value">iPhone · Android · Web</div>
+                </div>
+                <button class="ar-button" onclick="activateAR()">
+                    OPEN AR
+                </button>
+            </div>
+        </div>
+
+    </div>
 </div>
 
-<div class="bottom-bar">
-  <button id="resetBtn" class="btn secondary">Сбросить позицию</button>
-  <button id="helpBtn" class="btn secondary">Как использовать</button>
-</div>
+<script>
+    const viewer = document.getElementById('viewer');
+    const loading = document.getElementById('loading');
+    const card = document.getElementById('card');
 
-<div class="hint" id="hint">Направьте камеру на пол или стену</div>
+    viewer.addEventListener('load', () => {
+        loading.classList.add('hidden');
+    });
 
-<script type="module">
-/* ======= Конфигурация ======= */
-const MODEL_GLB = 'model.glb';
-const USDZ_PATH = 'model.usdz';
-
-/* ======= Импорты three.js ======= */
-import * as THREE from 'https://unpkg.com/three@0.160.0/build/three.module.js';
-import { GLTFLoader } from 'https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js';
-import { ARButton } from 'https://unpkg.com/three@0.160.0/examples/jsm/webxr/ARButton.js';
-
-/* ======= DOM ======= */
-const container = document.getElementById('container');
-const statusText = document.getElementById('statusText');
-const loaderEl = document.getElementById('loader');
-const androidBtn = document.getElementById('androidBtn');
-const iphoneLink = document.getElementById('iphoneLink');
-const scaleSlider = document.getElementById('scaleSlider');
-const decBtn = document.getElementById('decBtn');
-const incBtn = document.getElementById('incBtn');
-const resetBtn = document.getElementById('resetBtn');
-const helpBtn = document.getElementById('helpBtn');
-const hint = document.getElementById('hint');
-
-/* ======= Renderer / Scene ======= */
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
-renderer.setPixelRatio(window.devicePixelRatio);
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.xr.enabled = true;
-renderer.xr.setReferenceSpaceType('local-floor');
-container.appendChild(renderer.domElement);
-
-const scene = new THREE.Scene();
-const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 20);
-const light = new THREE.HemisphereLight(0xffffff, 0xbbbbff, 1);
-scene.add(light);
-
-/* ======= Model loading ======= */
-const loader = new GLTFLoader();
-let model = null;
-let placed = false;
-let modelScale = parseFloat(localStorage.getItem('ar_model_scale') || '1');
-let modelRotationY = parseFloat(localStorage.getItem('ar_model_rot') || '0');
-
-scaleSlider.value = modelScale;
-
-statusText.textContent = 'Загружаем модель…';
-loader.load(MODEL_GLB, gltf => {
-  model = gltf.scene;
-  model.traverse(n => { if (n.isMesh) n.castShadow = n.receiveShadow = true; });
-  model.scale.set(modelScale, modelScale, modelScale);
-  model.rotation.y = modelRotationY;
-  statusText.textContent = 'Готово. Нажмите AR и коснитесь поверхности';
-  loaderEl.classList.add('hidden');
-}, xhr => {
-  // progress optional
-}, err => {
-  statusText.textContent = 'Ошибка загрузки модели';
-  loaderEl.classList.add('hidden');
-});
-
-/* ======= AR Button (WebXR) ======= */
-const arButton = ARButton.createButton(renderer, { requiredFeatures: ['hit-test'] });
-arButton.style.display = 'none';
-document.body.appendChild(arButton);
-
-/* ======= Hit test ======= */
-let hitTestSource = null;
-let hitTestSourceRequested = false;
-let localRefSpace = null;
-
-/* ======= Placement logic ======= */
-function placeModelAt(pose) {
-  if (!model) return;
-  const pos = pose.transform.position;
-  model.position.set(pos.x, pos.y, pos.z);
-  if (!scene.children.includes(model)) scene.add(model);
-  placed = true;
-  saveState();
-}
-
-renderer.setAnimationLoop((timestamp, frame) => {
-  if (frame) {
-    const session = renderer.xr.getSession();
-    if (session && !hitTestSourceRequested) {
-      session.requestReferenceSpace('viewer').then(ref => {
-        session.requestHitTestSource({ space: ref }).then(source => {
-          hitTestSource = source;
-        });
-      });
-      session.requestReferenceSpace('local-floor').then(r => localRefSpace = r);
-      hitTestSourceRequested = true;
+    function activateAR(){
+        if (viewer && viewer.activateAR) {
+            viewer.activateAR();
+        }
     }
 
-    if (hitTestSource && localRefSpace) {
-      const hit = frame.getHitTestResults(hitTestSource)[0];
-      if (hit && !placed) {
-        const pose = hit.getPose(localRefSpace);
-        // show a subtle hint where to tap
-        hint.textContent = 'Нажмите, чтобы поместить';
-      }
+    // лёгкий параллакс для премиум‑ощущения
+    let parallaxEnabled = true;
+
+    function handleParallax(e){
+        if(!parallaxEnabled) return;
+        const rect = card.getBoundingClientRect();
+        const x = (e.clientX - rect.left) / rect.width - 0.5;
+        const y = (e.clientY - rect.top) / rect.height - 0.5;
+        const rotateX = y * -4;
+        const rotateY = x * 6;
+        card.style.transform = `translateY(0) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
     }
-  }
-  renderer.render(scene, camera);
-});
 
-/* ======= Input: tap to place ======= */
-renderer.domElement.addEventListener('click', (ev) => {
-  const session = renderer.xr.getSession();
-  if (!session || !hitTestSource || !localRefSpace) return;
-  // Use last frame's hit test result
-  session.requestAnimationFrame((t, frame) => {
-    const hit = frame.getHitTestResults(hitTestSource)[0];
-    if (hit) {
-      const pose = hit.getPose(localRefSpace);
-      placeModelAt(pose);
-      hint.textContent = 'Модель размещена. Используйте ползунок для масштаба';
+    function resetParallax(){
+        card.style.transform = 'translateY(0) rotateX(0deg) rotateY(0deg)';
     }
-  });
-});
 
-/* ======= Touch gestures: rotate + pinch ======= */
-let ongoingTouches = [];
-let lastTouchDist = null;
-let lastTouchX = null;
+    document.addEventListener('mousemove', handleParallax);
+    document.addEventListener('mouseleave', resetParallax);
 
-function getDistance(t1, t2) {
-  const dx = t2.clientX - t1.clientX;
-  const dy = t2.clientY - t1.clientY;
-  return Math.hypot(dx, dy);
-}
-
-renderer.domElement.addEventListener('touchstart', e => {
-  if (!placed || !model) return;
-  if (e.touches.length === 1) {
-    lastTouchX = e.touches[0].clientX;
-  } else if (e.touches.length === 2) {
-    lastTouchDist = getDistance(e.touches[0], e.touches[1]);
-  }
-}, {passive:true});
-
-renderer.domElement.addEventListener('touchmove', e => {
-  if (!placed || !model) return;
-  if (e.touches.length === 1 && lastTouchX !== null) {
-    const dx = e.touches[0].clientX - lastTouchX;
-    const rotY = dx * 0.005;
-    model.rotation.y += rotY;
-    modelRotationY = model.rotation.y;
-    lastTouchX = e.touches[0].clientX;
-    saveStateDebounced();
-  } else if (e.touches.length === 2 && lastTouchDist !== null) {
-    const dist = getDistance(e.touches[0], e.touches[1]);
-    const factor = dist / lastTouchDist;
-    modelScale = Math.max(0.1, Math.min(3, modelScale * factor));
-    model.scale.set(modelScale, modelScale, modelScale);
-    scaleSlider.value = modelScale;
-    lastTouchDist = dist;
-    saveStateDebounced();
-  }
-}, {passive:true});
-
-renderer.domElement.addEventListener('touchend', e => {
-  lastTouchDist = null;
-  lastTouchX = null;
-}, {passive:true});
-
-/* ======= UI controls ======= */
-scaleSlider.addEventListener('input', () => {
-  modelScale = parseFloat(scaleSlider.value);
-  if (model) model.scale.set(modelScale, modelScale, modelScale);
-  saveStateDebounced();
-});
-
-decBtn.addEventListener('click', () => {
-  modelScale = Math.max(0.1, modelScale - 0.05);
-  scaleSlider.value = modelScale;
-  if (model) model.scale.set(modelScale, modelScale, modelScale);
-  saveState();
-});
-
-incBtn.addEventListener('click', () => {
-  modelScale = Math.min(3, modelScale + 0.05);
-  scaleSlider.value = modelScale;
-  if (model) model.scale.set(modelScale, modelScale, modelScale);
-  saveState();
-});
-
-resetBtn.addEventListener('click', () => {
-  if (model) {
-    scene.remove(model);
-    placed = false;
-    model.position.set(0,0,0);
-    modelScale = 1;
-    modelRotationY = 0;
-    scaleSlider.value = modelScale;
-    localStorage.removeItem('ar_model_pos');
-    localStorage.removeItem('ar_model_scale');
-    localStorage.removeItem('ar_model_rot');
-    hint.textContent = 'Позиция сброшена. Нажмите на поверхность, чтобы поместить';
-  }
-});
-
-helpBtn.addEventListener('click', () => {
-  alert('Как использовать:\n\n• Направьте камеру на пол или стену\n• Нажмите на поверхность, чтобы поместить мебель\n• Свайп — вращение, пинч — масштаб\n• Используйте кнопки +/− или ползунок для точной подгонки');
-});
-
-/* ======= Android button triggers ARButton ======= */
-androidBtn.addEventListener('click', () => {
-  // ARButton is hidden; find it and click
-  const btn = document.querySelector('button[title="Enter AR"]') || document.querySelector('button[aria-label="Enter AR"]');
-  if (btn) btn.click();
-  else {
-    // fallback: show ARButton and click
-    arButton.style.display = '';
-    const b = arButton.querySelector('button');
-    if (b) b.click();
-  }
-});
-
-/* ======= Save / Restore state ======= */
-function saveState() {
-  localStorage.setItem('ar_model_scale', modelScale.toString());
-  localStorage.setItem('ar_model_rot', modelRotationY.toString());
-  if (model && placed) {
-    const p = model.position;
-    localStorage.setItem('ar_model_pos', JSON.stringify({x:p.x,y:p.y,z:p.z}));
-  }
-}
-
-let saveTimeout = null;
-function saveStateDebounced() {
-  clearTimeout(saveTimeout);
-  saveTimeout = setTimeout(saveState, 400);
-}
-
-function restoreState() {
-  const s = localStorage.getItem('ar_model_pos');
-  if (s && model) {
-    try {
-      const p = JSON.parse(s);
-      model.position.set(p.x,p.y,p.z);
-      if (!scene.children.includes(model)) scene.add(model);
-      placed = true;
-      hint.textContent = 'Восстановлена предыдущая позиция';
-    } catch(e){}
-  }
-}
-
-/* ======= Check USDZ availability for iPhone link ======= */
-fetch(USDZ_PATH, {method:'HEAD'}).then(r => {
-  if (!r.ok) {
-    iphoneLink.style.display = 'none';
-  }
-}).catch(()=>{ iphoneLink.style.display = 'none'; });
-
-/* ======= Resize handling ======= */
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-
-/* ======= When AR session starts, restore saved scale/rotation/position ======= */
-renderer.xr.addEventListener('sessionstart', () => {
-  if (model) {
-    model.scale.set(modelScale, modelScale, modelScale);
-    model.rotation.y = modelRotationY;
-    restoreState();
-  }
-});
-
-/* ======= Accessibility: keyboard placement for desktop testing ======= */
-window.addEventListener('keydown', (e) => {
-  if (e.key === 'p' && model) {
-    // place model in front of camera for desktop testing
-    const dir = new THREE.Vector3(0,0,-1).applyQuaternion(camera.quaternion);
-    const pos = camera.position.clone().add(dir.multiplyScalar(1.2));
-    model.position.copy(pos);
-    if (!scene.children.includes(model)) scene.add(model);
-    placed = true;
-    saveState();
-    hint.textContent = 'Модель размещена (тест)';
-  }
-});
-
-/* ======= Final UI tweaks after load ======= */
-setTimeout(() => {
-  if (!model) {
-    statusText.textContent = 'Модель ещё загружается или отсутствует';
-    loaderEl.classList.add('hidden');
-  }
-}, 4000);
-
-/* ======= Save initial scale/rotation to localStorage if changed by slider ======= */
-window.addEventListener('beforeunload', saveState);
+    // отключаем параллакс на очень маленьких экранах
+    if (window.matchMedia('(max-width: 600px)').matches) {
+        parallaxEnabled = false;
+        resetParallax();
+    }
 </script>
+
 </body>
 </html>
