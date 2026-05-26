@@ -5,245 +5,64 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>Ultra Premium AR — Native Quick Look & Scene Viewer</title>
 
-<!-- model-viewer (preview only) -->
 <script type="module" src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js"></script>
 
 <style>
-  :root{
-    --neon:#00e5ff;
-    --accent:#7b5cff;
-    --glass:rgba(255,255,255,0.04);
-    --glass-border:rgba(255,255,255,0.10);
-    --text:#ffffff;
-    --muted:rgba(255,255,255,0.72);
-  }
-
+  :root{--neon:#00e5ff;--accent:#7b5cff;--glass:rgba(255,255,255,0.04);--glass-border:rgba(255,255,255,0.10);--text:#ffffff;--muted:rgba(255,255,255,0.72)}
   *{box-sizing:border-box;margin:0;padding:0}
   html,body{height:100%}
   body{
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
+    min-height:100vh;display:flex;align-items:center;justify-content:center;
     background:radial-gradient(1200px 600px at 10% 10%, rgba(0,229,255,0.06), transparent 12%),
                radial-gradient(900px 500px at 90% 90%, rgba(123,92,255,0.06), transparent 12%),
-               #030305;
-    font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-    color:var(--text);
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    padding:28px;
+               #030305;font-family:Inter,system-ui,Arial;color:var(--text);padding:28px;
   }
-
-  .card{
-    width:100%;
-    max-width:720px;
-    height:82vh;
-    max-height:820px;
-    border-radius:28px;
+  .card{width:100%;max-width:720px;height:82vh;max-height:820px;border-radius:28px;
     background:linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
-    border:1px solid var(--glass-border);
-    box-shadow: 0 30px 90px rgba(0,0,0,0.75), 0 0 60px rgba(0,229,255,0.06);
-    padding:22px;
-    display:flex;
-    flex-direction:column;
-    gap:18px;
-    overflow:hidden;
-    position:relative;
-    backdrop-filter: blur(18px);
+    border:1px solid var(--glass-border);box-shadow:0 30px 90px rgba(0,0,0,0.75),0 0 60px rgba(0,229,255,0.06);
+    padding:22px;display:flex;flex-direction:column;gap:18px;overflow:hidden;backdrop-filter: blur(18px);
   }
-
-  .header{
-    display:flex;
-    align-items:center;
-    justify-content:space-between;
-    gap:12px;
-  }
-
-  .brand{
-    display:flex;
-    flex-direction:column;
-    gap:6px;
-  }
-
-  .badge{
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    padding:6px 12px;
-    border-radius:999px;
-    background:rgba(0,0,0,0.45);
-    border:1px solid rgba(255,255,255,0.04);
-    color:var(--muted);
-    font-size:12px;
-    letter-spacing:0.12em;
-    text-transform:uppercase;
-  }
-
-  .title{
-    font-size:20px;
-    font-weight:700;
-    letter-spacing:0.08em;
-    color:var(--text);
-  }
-
-  .subtitle{
-    font-size:13px;
-    color:var(--muted);
-  }
-
-  .viewer-area{
-    flex:1;
-    border-radius:18px;
-    overflow:hidden;
-    position:relative;
-    background:
-      radial-gradient(600px 200px at 20% 10%, rgba(0,229,255,0.04), transparent 20%),
-      radial-gradient(500px 200px at 80% 90%, rgba(123,92,255,0.03), transparent 20%),
-      linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.6));
+  .header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+  .badge{display:inline-flex;align-items:center;gap:10px;padding:6px 12px;border-radius:999px;background:rgba(0,0,0,0.45);border:1px solid rgba(255,255,255,0.04);color:var(--muted);font-size:12px;letter-spacing:0.12em;text-transform:uppercase}
+  .title{font-size:20px;font-weight:700;letter-spacing:0.08em}
+  .subtitle{font-size:13px;color:var(--muted)}
+  .viewer-area{flex:1;border-radius:18px;overflow:hidden;position:relative;
+    background:radial-gradient(600px 200px at 20% 10%, rgba(0,229,255,0.04), transparent 20%),
+               radial-gradient(500px 200px at 80% 90%, rgba(123,92,255,0.03), transparent 20%),
+               linear-gradient(180deg, rgba(0,0,0,0.55), rgba(0,0,0,0.6));
     box-shadow: inset 0 -40px 80px rgba(0,0,0,0.6);
   }
-
-  model-viewer{
-    width:100%;
-    height:100%;
-    display:block;
-    background:transparent;
-  }
-
-  .overlay-top{
-    position:absolute;
-    top:18px;
-    left:18px;
-    z-index:6;
-    pointer-events:none;
-  }
-
-  .overlay-bottom{
-    position:absolute;
-    left:18px;
-    right:18px;
-    bottom:18px;
-    z-index:8;
-    display:flex;
-    justify-content:space-between;
-    align-items:center;
-    gap:12px;
-    pointer-events:auto;
-  }
-
-  .meta{
-    display:flex;
-    flex-direction:column;
-    gap:4px;
-    color:var(--muted);
-  }
-
-  .meta .label{font-size:11px; text-transform:uppercase; letter-spacing:0.12em}
-  .meta .value{font-size:13px; color:var(--text)}
-
-  .controls{
-    display:flex;
-    gap:10px;
-    align-items:center;
-  }
-
-  .btn{
-    -webkit-tap-highlight-color: transparent;
-    display:inline-flex;
-    align-items:center;
-    gap:10px;
-    padding:12px 18px;
-    border-radius:999px;
-    border:1px solid rgba(255,255,255,0.06);
-    background:linear-gradient(180deg,#ffffff 0%, #e6faff 100%);
-    color:#000;
-    font-weight:700;
-    font-size:13px;
-    cursor:pointer;
-    box-shadow: 0 12px 36px rgba(0,0,0,0.6), 0 0 30px rgba(0,229,255,0.08);
-    transition: transform .18s ease, box-shadow .18s ease, opacity .18s ease;
-    white-space:nowrap;
-  }
-
-  .btn.ios{
-    background:linear-gradient(180deg,#0b0b0b,#1a1a1a);
-    color:var(--text);
-    border:1px solid rgba(255,255,255,0.04);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.7), 0 0 18px rgba(123,92,255,0.06);
-  }
-
-  .btn.secondary{
-    background:linear-gradient(180deg,#111,#222);
-    color:var(--text);
-  }
-
-  .btn:active{ transform:translateY(1px) }
-
-  .hint{
-    font-size:12px;
-    color:var(--muted);
-    text-align:right;
-  }
-
-  .loader{
-    position:absolute;
-    inset:0;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:9;
-    background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6));
-    transition:opacity .35s ease, visibility .35s ease;
-  }
-
-  .loader.hidden{ opacity:0; visibility:hidden; pointer-events:none }
-
-  .ring{
-    width:64px;
-    height:64px;
-    border-radius:50%;
-    border:4px solid rgba(255,255,255,0.06);
-    border-top-color:var(--neon);
-    animation:spin 1s linear infinite;
-    box-shadow:0 0 30px rgba(0,229,255,0.14);
-  }
-
-  @keyframes spin{ to{ transform:rotate(360deg) } }
-
-  /* responsive */
-  @media (max-width:720px){
-    .card{height:92vh; max-width:520px}
-    .title{font-size:18px}
-    .btn{padding:10px 14px; font-size:12px}
-  }
-
-  @media (max-width:420px){
-    .card{padding:14px}
-    .badge{font-size:11px}
-    .title{font-size:16px}
-  }
+  model-viewer{width:100%;height:100%;display:block;background:transparent}
+  .overlay-bottom{position:absolute;left:18px;right:18px;bottom:18px;z-index:8;display:flex;justify-content:space-between;align-items:center;gap:12px}
+  .meta{display:flex;flex-direction:column;gap:4px;color:var(--muted)}
+  .meta .label{font-size:11px;text-transform:uppercase;letter-spacing:0.12em}
+  .meta .value{font-size:13px;color:var(--text)}
+  .controls{display:flex;gap:10px;align-items:center}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:12px 18px;border-radius:999px;border:1px solid rgba(255,255,255,0.06);background:linear-gradient(180deg,#ffffff 0%, #e6faff 100%);color:#000;font-weight:700;font-size:13px;cursor:pointer;box-shadow:0 12px 36px rgba(0,0,0,0.6),0 0 30px rgba(0,229,255,0.08);transition:transform .18s ease}
+  .btn.ios{background:linear-gradient(180deg,#0b0b0b,#1a1a1a);color:var(--text);border:1px solid rgba(255,255,255,0.04);box-shadow:0 10px 30px rgba(0,0,0,0.7),0 0 18px rgba(123,92,255,0.06)}
+  .loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:9;background:linear-gradient(180deg, rgba(0,0,0,0.45), rgba(0,0,0,0.6));transition:opacity .35s ease,visibility .35s ease}
+  .loader.hidden{opacity:0;visibility:hidden;pointer-events:none}
+  .ring{width:64px;height:64px;border-radius:50%;border:4px solid rgba(255,255,255,0.06);border-top-color:var(--neon);animation:spin 1s linear infinite;box-shadow:0 0 30px rgba(0,229,255,0.14)}
+  @keyframes spin{to{transform:rotate(360deg)}}
 </style>
 </head>
 <body>
 
-<div class="card" role="main" aria-label="AR preview card">
+<div class="card">
   <div class="header">
-    <div class="brand">
+    <div>
       <div class="badge"><span style="width:8px;height:8px;border-radius:50%;background:var(--neon);display:inline-block;box-shadow:0 0 10px var(--neon)"></span> Native AR</div>
       <div class="title">Ultra Premium AR Experience</div>
       <div class="subtitle">Preview + native Quick Look (iOS) and Scene Viewer (Android)</div>
     </div>
-
-    <div style="text-align:right">
-      <div style="font-size:12px;color:var(--muted)">Files: <span style="color:var(--text)">qwe.glb</span> · <span style="color:var(--text)">model.glb.usdz</span></div>
+    <div style="text-align:right;font-size:12px;color:var(--muted)">
+      Files: <span style="color:var(--text)">model.glb</span> · <span style="color:var(--text)">model.glb.usdz</span>
     </div>
   </div>
 
-  <div class="viewer-area" id="viewerArea">
-    <!-- preview only: model-viewer WITHOUT ar attribute (we use native AR triggers) -->
+  <div class="viewer-area">
     <model-viewer id="preview"
-      src="qwe.glb"
+      src="model.glb"
       alt="3D preview"
       camera-controls
       auto-rotate
@@ -251,139 +70,72 @@
       exposure="1.05"
       shadow-intensity="1.4"
       environment-image="neutral"
-      style="background:transparent"
       loading="eager">
     </model-viewer>
 
-    <div class="viewer-overlay-gradient" aria-hidden="true" style="position:absolute;inset:0;pointer-events:none"></div>
-
-    <div class="overlay-top" aria-hidden="true">
-      <!-- decorative neon line -->
-      <div style="width:220px;height:2px;border-radius:2px;background:linear-gradient(90deg,var(--neon),var(--accent));opacity:0.12"></div>
-    </div>
-
     <div class="overlay-bottom">
-      <div class="meta" aria-hidden="true">
+      <div class="meta">
         <div class="label">AR Ready</div>
-        <div class="value">Quick Look · Scene Viewer · Preview</div>
+        <div class="value">Quick Look · Scene Viewer</div>
       </div>
 
-      <div class="controls" role="group" aria-label="AR controls">
-        <!-- Hidden anchor for stable Quick Look trigger on iOS -->
+      <div class="controls">
         <a id="iosAnchor" rel="ar" href="model.glb.usdz" style="display:none"></a>
 
-        <!-- iOS button: triggers the anchor click (most stable Quick Look trigger) -->
-        <button id="btnIOS" class="btn ios" title="Open in Quick Look (iPhone)" aria-label="Open in Quick Look (iPhone)">
-          iPhone AR
-        </button>
-
-        <!-- Android button: intent -> Scene Viewer -->
-        <button id="btnAndroid" class="btn" title="Open in Scene Viewer (Android)" aria-label="Open in Scene Viewer (Android)">
-          Android AR
-        </button>
+        <button id="btnIOS" class="btn ios">iPhone AR</button>
+        <button id="btnAndroid" class="btn">Android AR</button>
       </div>
     </div>
 
     <div class="loader" id="loader">
-      <div class="ring" role="status" aria-label="Loading model"></div>
+      <div class="ring"></div>
     </div>
   </div>
 </div>
 
 <script>
-  (function(){
-    const preview = document.getElementById('preview');
-    const loader = document.getElementById('loader');
-    const iosAnchor = document.getElementById('iosAnchor');
-    const btnIOS = document.getElementById('btnIOS');
-    const btnAndroid = document.getElementById('btnAndroid');
+(function(){
+  const preview = document.getElementById('preview');
+  const loader = document.getElementById('loader');
+  const iosAnchor = document.getElementById('iosAnchor');
+  const btnIOS = document.getElementById('btnIOS');
+  const btnAndroid = document.getElementById('btnAndroid');
 
-    // Absolute URLs for Scene Viewer intent and Quick Look anchor
-    const glbUrl = new URL('qwe.glb', window.location.href).href;
-    const usdzUrl = new URL('model.glb.usdz', window.location.href).href;
-    iosAnchor.href = usdzUrl;
+  const glbUrl = new URL('model.glb', window.location.href).href;
+  const usdzUrl = new URL('model.glb.usdz', window.location.href).href;
+  iosAnchor.href = usdzUrl;
 
-    // Hide loader when preview loaded
-    preview.addEventListener('load', () => {
-      loader.classList.add('hidden');
-    });
+  preview.addEventListener('load', () => loader.classList.add('hidden'));
 
-    // Platform detection
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    const isIOS = /iPhone|iPad|iPod/i.test(ua);
-    const isAndroid = /Android/i.test(ua);
+  const ua = navigator.userAgent;
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const isAndroid = /Android/i.test(ua);
 
-    // Visual hint: emphasize platform button
-    if (isIOS) {
-      btnIOS.style.opacity = '1';
-      btnAndroid.style.opacity = '0.6';
-    } else if (isAndroid) {
-      btnAndroid.style.opacity = '1';
-      btnIOS.style.opacity = '0.6';
-    }
+  if (isIOS) { btnIOS.style.opacity = '1'; btnAndroid.style.opacity = '0.6'; }
+  else if (isAndroid) { btnAndroid.style.opacity = '1'; btnIOS.style.opacity = '0.6'; }
 
-    // iOS: stable Quick Look trigger via anchor click
-    btnIOS.addEventListener('click', (e) => {
-      // If not iOS, fallback to model-viewer AR activation (if supported)
-      if (!isIOS) {
-        // try model-viewer native activateAR if available
-        if (preview.activateAR) {
-          preview.activateAR();
-          return;
-        }
-      }
+  btnIOS.addEventListener('click', () => {
+    try { iosAnchor.click(); }
+    catch { window.location.href = usdzUrl; }
+  });
 
-      // Use anchor click — most reliable Quick Look trigger
-      try {
-        iosAnchor.click();
-      } catch (err) {
-        // fallback: set location (last resort)
-        window.location.href = usdzUrl;
-      }
-    });
+  btnAndroid.addEventListener('click', () => {
+    const sceneViewerUrl =
+      'https://arvr.google.com/scene-viewer/1.0?file=' +
+      encodeURIComponent(glbUrl) +
+      '&mode=ar_only&title=AR%20Model';
 
-    // Android: Scene Viewer via intent with fallback to https scene-viewer URL
-    btnAndroid.addEventListener('click', (e) => {
-      const sceneViewerUrl = 'https://arvr.google.com/scene-viewer/1.0?file=' +
-        encodeURIComponent(glbUrl) +
-        '&mode=ar_only&title=' + encodeURIComponent('AR Model');
+    const intentUrl =
+      'intent://arvr.google.com/scene-viewer/1.0?file=' +
+      encodeURIComponent(glbUrl) +
+      '&mode=ar_only&title=AR%20Model#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=' +
+      encodeURIComponent(sceneViewerUrl) +
+      ';end;';
 
-      const intentUrl = 'intent://arvr.google.com/scene-viewer/1.0?file=' +
-        encodeURIComponent(glbUrl) +
-        '&mode=ar_only&title=' + encodeURIComponent('AR Model') +
-        '#Intent;scheme=https;package=com.google.android.googlequicksearchbox;action=android.intent.action.VIEW;S.browser_fallback_url=' +
-        encodeURIComponent(sceneViewerUrl) +
-        ';end;';
-
-      if (isAndroid) {
-        // Use intent (preferred) — opens Scene Viewer app directly when available
-        window.location.href = intentUrl;
-      } else {
-        // Non-Android fallback: open scene viewer URL (some browsers may handle)
-        window.open(sceneViewerUrl, '_blank', 'noopener');
-      }
-    });
-
-    // Accessibility: keyboard activation
-    btnIOS.addEventListener('keyup', (e) => { if (e.key === 'Enter') btnIOS.click(); });
-    btnAndroid.addEventListener('keyup', (e) => { if (e.key === 'Enter') btnAndroid.click(); });
-
-    // Small UX: if device supports WebXR and user wants, allow preview.activateAR via long-press (optional)
-    // We keep preview without ar attribute to ensure native triggers are used.
-    // But provide a safe fallback: double-click preview to try model-viewer AR (if supported).
-    let lastTap = 0;
-    preview.addEventListener('click', () => {
-      const now = Date.now();
-      if (now - lastTap < 300) {
-        if (preview.activateAR) preview.activateAR();
-      }
-      lastTap = now;
-    });
-
-    // Prevent accidental navigation on iOS when anchor is clicked programmatically:
-    // nothing else needed — using anchor click is the recommended approach.
-
-  })();
+    if (isAndroid) window.location.href = intentUrl;
+    else window.open(sceneViewerUrl, '_blank');
+  });
+})();
 </script>
 
 </body>
